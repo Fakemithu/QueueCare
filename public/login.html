@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">   
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="login.css" />
+  </head>
+  <body>
+    <div class="container">
+<!-- login form -->
+      <div class="form-box login">
+        <form action="">
+            <h1>login</h1>
+            <div class="input-box">
+              <input type="email" id="login-email" placeholder="Email" required>
+
+               
+                <i class='bx bxs-user'></i>
+            </div>
+            <div class="input-box">
+                <input type="password"id="login-password" placeholder="Password" 
+                required>
+                <i class='bx bxs-lock-alt'></i>
+            </div>
+            <div class="forgot-link">
+                <a href="#">forgot password?</a>
+            </div>
+            <button type="submit" class="btn">login</button>
+            <p>or login with social platforms</p>
+            <div class="social-icons">
+                <a href="#"><i class='bx bxl-google' ></i></a>
+                <a href="#"><i class='bx bxl-facebook' ></i></a>
+                <a href="#"><i class='bx bxl-github' ></i></a>
+                <a href="#"><i class='bx bxl-linkedin' ></i></a>
+            </div>
+        </form>
+      </div>
+<!--Registration-->
+      <div class="form-box register">
+        <form action="">
+            <h1>Registration</h1>
+            <div class="input-box">
+                <input type="text" id="register-username" placeholder="Username" 
+                required>
+                <i class='bx bxs-user'></i>
+            </div>
+            <div class="input-box">
+                <input type="text" id="register-email" placeholder="Email" 
+                required>
+                <i class='bx bxs-envelope'></i>
+            </div>
+            <div class="input-box">
+                <input type="password" id="register-password" placeholder="password" 
+                required>
+                <i class='bx bxs-lock-alt'></i>
+            </div>
+            <button type="submit" class="btn">Register</button>
+            <p>or Register with social platforms</p>
+            <div class="social-icons">
+                <a href="#"><i class='bx bxl-google' ></i></a>
+                <a href="#"><i class='bx bxl-facebook' ></i></a>
+                <a href="#"><i class='bx bxl-github' ></i></a>
+                <a href="#"><i class='bx bxl-linkedin' ></i></a>
+            </div>
+        </form>
+      </div>
+
+      
+    <!--toggle-->
+    <div class="toggle-box">
+       <div class="toggle-panel toggle-left">
+        <h1>Hello, Welcome!</h1>
+        <p>Don't have an account?</p>
+        <button class="btn register-btn">Register</button>
+       </div>
+       <div class="toggle-panel toggle-right">
+        <h1>Welcome Back!</h1>
+        <p>Already have an account?</p>
+        <button class="btn login-btn">Login</button>
+       </div>
+    </div>
+
+    </div>
+
+
+    <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<!-- Firebase Config & Initialization -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyChiv7yPoDxaae7mPOqgzuEQtoGmp4KdMU",
+    authDomain: "digital-queue-system-ca4a3.firebaseapp.com",
+    databaseURL: "https://digital-queue-system-ca4a3-default-rtdb.firebaseio.com",
+    projectId: "digital-queue-system-ca4a3",
+    storageBucket: "digital-queue-system-ca4a3.firebasestorage.app",
+    messagingSenderId: "2888219915",
+    appId: "1:2888219915:web:668252d6ef99882cff760e"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database(); // `db` will now be available to login.js
+</script>
+
+<!-- Your JS -->
+<script src="login.js" defer></script>
+
+  </body>
+</html>
