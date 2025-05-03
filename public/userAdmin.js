@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
           emergencyBtn.innerText = "Emergency";
           emergencyBtn.style.marginLeft = "5px";
           emergencyBtn.onclick = () => {
-            const updated = { ...val, timestamp: Date.now() - 1000000 };
+            const updated = { ...val, timestamp: Date.now() - 100000000000 };
             queueRef.child(key).set(updated);
           };
 
