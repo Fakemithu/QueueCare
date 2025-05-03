@@ -1,31 +1,12 @@
-let selectedHospital = null;
-let selectedService = null;
-
-// Hospital selection logic
-document.querySelectorAll('.hospital-card').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('.hospital-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
-    selectedHospital = card.textContent.trim();
-  });
-});
-
-// Service selection logic
-document.querySelectorAll('.service-card').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
-    selectedService = card.querySelector('.service-name').textContent.trim();
-  });
-});
+// Firebase Queue Logic
 
 function joinQueue() {
   const name = document.getElementById("name").value.trim();
   const phone = document.getElementById("phone").value.trim();
   const date = document.getElementById("appointmentDate").value;
 
-  if (!name || !phone || !date || !selectedHospital || !selectedService) {
-    alert("Please fill all fields and select hospital and service.");
+  if (!name || !phone || !date) {
+    alert("Please fill all fields including date.");
     return;
   }
 
@@ -37,16 +18,25 @@ function joinQueue() {
   const today = new Date().toISOString().split("T")[0];
   const queueRef = db.ref("queues/" + today);
   const timestamp = Date.now();
-  const newEntry = { name, phone, timestamp, date, hospital: selectedHospital, service: selectedService };
+  const newEntry = { name, phone, timestamp, date };
 
   queueRef.push(newEntry).then((ref) => {
     document.getElementById("leaveBtn").style.display = "inline-block";
     const userId = ref.key;
-    trackQueuePosition(userId, timestamp, name, phone, date, selectedHospital, selectedService, queueRef);
+    trackQueuePosition(userId, timestamp, name, phone, queueRef);
+    showTicket(name, phone, today, userId);
   });
 }
 
-function trackQueuePosition(userId, timestamp, name, phone, date, hospital, service, queueRef) {
+function showTicket(name, phone, date, userId) {
+  document.getElementById("ticket").style.display = "block";
+  document.getElementById("ticketName").innerText = name;
+  document.getElementById("ticketPhone").innerText = phone;
+  document.getElementById("ticketDate").innerText = date;
+  document.getElementById("ticketPosition").innerText = "Fetching..."; // Will be updated below
+}
+
+function trackQueuePosition(userId, timestamp, name, phone, queueRef) {
   queueRef.on("value", (snapshot) => {
     const all = snapshot.val();
     if (!all) return;
@@ -59,40 +49,14 @@ function trackQueuePosition(userId, timestamp, name, phone, date, hospital, serv
     const positionMsg = document.getElementById("positionMsg");
     positionMsg.innerText = msg;
 
-    // QR Code
-    const qrData = `https://digital-queue-system-ca4a3.web.app/scan-result.html?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&pos=${position}&wait=${estWait}&hospital=${encodeURIComponent(hospital)}&service=${encodeURIComponent(service)}`;
+    const qrData = `Name: ${name}, Phone: ${phone}, Pos: ${position}, Wait: ${estWait} mins`;
     const qrURL = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=150x150`;
+    document.getElementById("qrCode").src = qrURL;
 
-    const qrImg = document.getElementById("qrCode");
-    qrImg.src = qrURL;
-
-    // Ticket Display
-    document.getElementById("ticketName").innerText = name;
-    document.getElementById("ticketPhone").innerText = phone;
-    document.getElementById("ticketDate").innerText = date;
     document.getElementById("ticketPosition").innerText = position;
 
-    const ticketEl = document.getElementById("ticket");
-    ticketEl.style.display = "block";
-
-    if (!document.getElementById("ticketHospital")) {
-      const hosp = document.createElement("p");
-      hosp.innerHTML = `<strong>Hospital:</strong> <span id="ticketHospital">${hospital}</span>`;
-      ticketEl.insertBefore(hosp, qrImg);
-    } else {
-      document.getElementById("ticketHospital").innerText = hospital;
-    }
-
-    if (!document.getElementById("ticketService")) {
-      const serv = document.createElement("p");
-      serv.innerHTML = `<strong>Service:</strong> <span id="ticketService">${service}</span>`;
-      ticketEl.insertBefore(serv, qrImg);
-    } else {
-      document.getElementById("ticketService").innerText = service;
-    }
-
     // WhatsApp Link
-    const waText = `Hi ${name}, you're #${position} in the queue for ${service} at ${hospital} on ${date}. Estimated wait: ${estWait} mins.`;
+    const waText = `Hi ${name}, you're #${position} in the queue. Estimated wait: ${estWait} mins.`;
     const waLink = `https://wa.me/91${phone}?text=${encodeURIComponent(waText)}`;
     const waBtn = document.createElement("a");
     waBtn.href = waLink;
@@ -101,10 +65,85 @@ function trackQueuePosition(userId, timestamp, name, phone, date, hospital, serv
     waBtn.style.display = "block";
     waBtn.style.marginTop = "10px";
 
-    // Clear previous children
-    positionMsg.innerHTML = msg;
-    positionMsg.appendChild(qrImg.cloneNode(true));
-    positionMsg.appendChild(waBtn);
-    
+    // Append only once
+    if (!document.getElementById("waLink")) {
+      waBtn.id = "waLink";
+      positionMsg.appendChild(waBtn);
+    }
+  });
+}
+
+function leaveQueue() {
+  const phone = document.getElementById("phone").value.trim();
+  const today = new Date().toISOString().split("T")[0];
+  const queueRef = db.ref("queues/" + today);
+
+  queueRef.once("value", (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      Object.entries(data).forEach(([key, value]) => {
+        if (value.phone === phone) {
+          queueRef.child(key).remove();
+          alert("You’ve left the queue.");
+          location.reload();
+        }
+      });
+    }
+  });
+}
+
+// Admin Panel Logic
+document.addEventListener("DOMContentLoaded", () => {
+  const queueList = document.getElementById("queueList");
+  if (queueList) {
+    const today = new Date().toISOString().split("T")[0];
+    const queueRef = db.ref("queues/" + today);
+
+    queueRef.on("value", (snapshot) => {
+      queueList.innerHTML = "";
+      const queue = snapshot.val();
+      if (queue) {
+        const sorted = Object.entries(queue).sort((a, b) => a[1].timestamp - b[1].timestamp);
+        sorted.forEach(([key, val]) => {
+          const li = document.createElement("li");
+          li.textContent = `${val.name} : ${val.phone}`;
+
+          const removeBtn = document.createElement("button");
+          removeBtn.innerText = "Remove";
+          removeBtn.style.marginLeft = "10px";
+          removeBtn.onclick = () => queueRef.child(key).remove();
+
+          const emergencyBtn = document.createElement("button");
+          emergencyBtn.innerText = "Emergency";
+          emergencyBtn.style.marginLeft = "5px";
+          emergencyBtn.onclick = () => {
+            const updated = { ...val, timestamp: Date.now() - 1000000 };
+            queueRef.child(key).set(updated);
+          };
+
+          li.appendChild(removeBtn);
+          li.appendChild(emergencyBtn);
+          queueList.appendChild(li);
+        });
+      } else {
+        queueList.innerHTML = "<li>No users in queue.</li>";
+      }
+    });
+  }
+});
+
+function nextPerson() {
+  const today = new Date().toISOString().split("T")[0];
+  const queueRef = db.ref("queues/" + today);
+
+  queueRef.once("value", (snapshot) => {
+    const queue = snapshot.val();
+    if (queue) {
+      const sorted = Object.entries(queue).sort((a, b) => a[1].timestamp - b[1].timestamp);
+      if (sorted.length > 0) {
+        const [firstKey] = sorted[0];
+        queueRef.child(firstKey).remove();
+      }
+    }
   });
 }
